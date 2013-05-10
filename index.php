@@ -2,12 +2,12 @@
 include('inc/Stock.php');
 include('inc/PseudoDaemon.class.php');
 
-define(PDT_ROOT_LINK, PDT_GetRootLink());
-define(PDT_WORKING_DIR, dirname(__FILE__));
+define("PDT_ROOT_LINK", PDT_GetRootLink());
+define("PDT_WORKING_DIR", dirname(__FILE__));
 
 $PDT = new PseudoDaemon();
 
-if($_POST['handler']){
+if(isset($_POST['handler'])){
 	if(is_file(PDT_WORKING_DIR.'/handlers/'.$_POST['handler'].'.php')){
 		include(PDT_WORKING_DIR.'/handlers/'.$_POST['handler'].'.php');
 	}else{
