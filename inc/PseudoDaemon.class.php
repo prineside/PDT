@@ -8,6 +8,24 @@ class PseudoDaemon {
 	public $max_dead_script_action_delay = 10;	// float, seconds
 	public $console_max_lines = 20;	
 	
+	function __construct(){
+		$im_dirs = array(
+			'/data',
+			'/data/listener',
+			'/data/ram',
+			'/data/scripts',
+			'/data/scripts/input',
+			'/data/scripts/output',
+			'/data/scripts/status',
+			'/scripts'
+		);
+		foreach($im_dirs as $dir){
+			if(!is_dir(PDT_WORKING_DIR.$dir)){
+				mkdir(PDT_WORKING_DIR.$dir, 0777);
+			}
+		}
+	}
+	
 	function getScriptList(){
 		$src = opendir(PDT_WORKING_DIR.'/scripts');
 		while($script = readdir($src)){
