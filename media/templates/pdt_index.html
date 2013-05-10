@@ -1,0 +1,40 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset='utf-8'>
+	<link rel='stylesheet' type='text/css' href='<?=PDT_ROOT_LINK?>media/default.css'>
+	<script type="text/javascript" src="<?=PDT_ROOT_LINK?>media/jquery-1.7.1.min.js"></script>
+	<script type="text/javascript" src="<?=PDT_ROOT_LINK?>media/ace/ace.js"></script>
+	<script type="text/javascript" src="<?=PDT_ROOT_LINK?>media/scripts.js"></script>
+	<script>
+		$('document').ready(function(){
+			PDT.loadScriptList();
+			PDT.focusOnPage('scripts');
+			PDT.listenChanges();
+		});
+	</script>
+</head>
+<body>
+	<div id="wrap">
+		<div id="left_cont">
+			<div class="block_title"><div id="status_bar">Загрузка...</div></div>
+			<div class="menu_link menu_scripts" onClick="PDT.focusOnPage('scripts')">Скрипты</div>
+			<div class="menu_link menu_editor" onClick="PDT.focusOnPage('editor')">Редактор</div>
+			<div class="menu_link menu_console" onClick="PDT.focusOnPage('console')">Консоль</div>
+			<div id="message_bar"></div>
+		</div>
+		<div id="right_cont">
+			<div id="page_scripts" class="page"></div>
+			<div id="page_console" class="page">
+				<div id="console_tabs" class="tabs_container"><div class="text">Консоль</div></div>
+				<div id="console"></div>
+				<div id="console_line"></div>
+			</div>
+			<div id="page_editor" class="page">
+				<div id="editor_tabs" class="tabs_container"><div class="text">Редактор</div></div>
+				<div id="editor"></div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
