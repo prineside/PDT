@@ -33,7 +33,6 @@ ace.define('ace/theme/eclipse_notepad', ['require', 'exports', 'module' , 'ace/l
 
 exports.isDark = false;
 exports.cssText = ".ace-eclipse .ace_gutter {\
-background: url(media/img/noise.png);\
 border-right: 1px solid #ccc;\
 color: rgb(136, 136, 136);\
 box-shadow:inset 1px 1px 0 #fff;\

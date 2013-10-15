@@ -1,4 +1,18 @@
-var PDT = {
+var history = new Array();
+var history_pointer = 0;
+var console_scroll = true;
+
+$('document').ready(function(){
+	$('#console').scroll(function (e) {
+		if(e.target.scrollTop == e.target.scrollTopMax){
+			console_scroll = true;
+		}else{
+			console_scroll = false;
+		}
+	});
+});
+
+var PDT = { 
 	showLoading: function(){
 		$('#status_bar').fadeIn(150);
 	},
@@ -7,15 +21,19 @@ var PDT = {
 		$('#status_bar').fadeOut(300);
 	},
 	
-	loadHandler: function(hdl, args, cb){
+	loadHandler: function(hdl, args, cb, silent = false){
 		$.post("index.php", {handler:hdl, args:args, shell:true}, function(d){
 			if(d.substr(0,1)=='{'||d.substr(0,1)=='['){
 				if(typeof cb == 'function'){
+					console.log(d);
 					cb($.parseJSON(d));
 				}
 			}else{
-				if(cb != 'silent'){
+				if(silent != true){
 					PDT.showMessage(d);
+				}
+				if(typeof cb == 'function'){
+					cb();
 				}
 			}
 		});
@@ -56,7 +74,8 @@ var PDT = {
 		// showPopup(1, 'Заголовок Confirm', 'Сообщение', function(){...});
 		// showPopup(2, 'Заголовок Prompt', 'Сообщение', function(){ $('#pdt_popup_value').text(); });
 		var wrap = $('<div>', {class: 'pdt_popup'}).appendTo('#wrap');
-		$('<div>', {class: 'pdt_popup_title'}).html(title).appendTo(wrap);
+		var titlediv = $('<div>', {class: 'pdt_popup_title'}).html(title).appendTo(wrap);
+		$('<div>', {class: 'pdt_popup_title_close', onClick: '$(this).parent().parent().remove();'}).appendTo(titlediv);
 		var content = $('<div>', {class: 'pdt_popup_content'}).html(msg).appendTo(wrap);
 		$('<div>', {class: 'clear'}).appendTo(content);
 		if(type == 'alert' || type == 0){
@@ -135,7 +154,7 @@ var PDT = {
 				
 				var li = $('<div>', {class: 'list_unit', script: v.script}).appendTo('#page_scripts');
 				$('<div>', {class: 'list_unit_status '+statclass, title: stattitle}).appendTo(li);
-				$('<div>', {class: 'list_unit_name', title: 'Использовано памяти: '+v.ramsize+'b'}).html(v.script).appendTo(li);
+				$('<div>', {class: 'list_unit_name', title: 'Использовано памяти: '+(v.ramsize/1000)+' kb. Место на диске: '+(v.size/1000)+' kb.'}).html(v.script).appendTo(li);
 				if(v.status == 0 || isNaN(v.status)){
 					$('<div>', {class: 'list_unit_button list_unit_button_delete', title: 'Удалить', onclick: 'PDT.showPopup(1, "Удаление скрипта", "Вы действительно хотите удалить скрипт '+v.script+'?", function(){PDT.deleteScript("'+v.script+'");});'}).appendTo(li);
 					$('<div>', {class: 'list_unit_button list_unit_button_edit', title: 'Редактировать', onclick: 'PDT.loadScriptEditor("'+v.script+'", function(){PDT.showScriptEditor("'+v.script+'");})'}).appendTo(li);
@@ -147,6 +166,7 @@ var PDT = {
 					$('<div>', {class: 'list_unit_button list_unit_button_stop', title: 'Остановить', onclick: 'PDT.stopScript("'+v.script+'")'}).appendTo(li);
 					$('<div>', {class: 'list_unit_button list_unit_button_console', title: 'Консоль', onclick: 'PDT.loadScriptConsole("'+v.script+'", function(){PDT.showScriptConsole("'+v.script+'");})'}).appendTo(li);
 				}
+				$('<div>', {class: 'list_unit_button list_unit_button_memory', title: 'Память', onclick: 'PDT.scriptVarList("'+v.script+'")'}).appendTo(li);
 			});
 			PDT.hideLoading();
 		});
@@ -191,16 +211,38 @@ var PDT = {
 		});
 	},
 	
+	loadScriptProgress: function(scr){
+		PDT.loadHandler('progress', {script:scr}, function(arr){
+			$('#script_'+scr+'_console_progress').css('width', (100*arr.progress)+'%');
+			console.log(arr.progress);
+		});
+	},
+	
 	loadScriptConsole: function(scr, cb){	// Загружает (создает) вкладку с консолью скрипта (обновляет)
 		PDT.loadHandler('console', {script:scr}, function(arr){
+			console.log(arr);
 			if($('#script_'+scr+'_console').length){
 				var console_div = $('#script_'+scr+'_console').html('');
 			}else{
 				$('<div>', {id: 'script_'+scr+'_console_tab', class: 'console_tab tab', onclick: 'PDT.showScriptConsole("'+scr+'")'}).html(scr).appendTo('#console_tabs');
 				var console_div = $('<div>', {id: 'script_'+scr+'_console', class: 'console'}).appendTo('#console');
+				var progress_wrap = $('<div>', {class: 'progress_wrap'}).appendTo('#script_'+scr+'_console_tab');
+				$('<div>', {id: 'script_'+scr+'_console_progress', class: 'progress'}).appendTo(progress_wrap);
 				$('<div>', {id: "console_line_"+scr, class: "console_line", contenteditable: "true"}).appendTo('#console_line');
 				$('<div>', {id: "console_line_"+scr+"_submit", class: "console_line_submit", onclick: "PDT.inputScript('"+scr+"', $('#console_line_"+scr+"').html());"}).html('Отправить').appendTo('#console_line');
 				$("#console_line_"+scr).keypress(function(e) {
+					if (e.keyCode == 38){
+						if(history.length>0 && history_pointer!=0){
+							history_pointer--;
+							$(this).html(history[history_pointer]);
+						}
+					} else if (e.keyCode == 40){
+						if(history.length>0 && history_pointer!=history.length){
+							history_pointer++;
+							$(this).html(history[history_pointer]);
+						}
+					}
+					
 					if (e.which == 13){
 						PDT.inputScript(scr, $('#console_line_'+scr).html());
 						e.preventDefault();
@@ -217,8 +259,10 @@ var PDT = {
 					PDT.loadScriptList();
 				}
 			});
+			if(console_scroll == true){
+				$('#console').scrollTop(9999);
+			}
 			
-						
 			if(typeof cb == 'function'){
 				cb(scr);
 			}
@@ -231,6 +275,7 @@ var PDT = {
 			$(this).hide();
 		});
 		$('#console_line_'+scr).show();
+		$('#console_line_'+scr).focus();
 		
 		$('.console_line_submit').each(function(){
 			$(this).hide();
@@ -259,7 +304,29 @@ var PDT = {
 	
 	inputScript: function(scr, data){
 		$('#console_line_'+scr).html('');
-		PDT.loadHandler('inputScript', {script: scr, data: data}, 'silent');
+		if(data.substr(-4) == '<br>'){ data = data.substr(0, data.length-4); }
+		PDT.loadHandler('inputScript', {script: scr, data: data}, function(){},true);
+		var hist_lngth = history.length;
+		history[hist_lngth] = data;
+		history_pointer = hist_lngth+1;
+	},
+	
+	scriptVarList: function(scr){
+		PDT.loadHandler('scriptVarList', {script: scr}, function(data){
+			var wrap = $('<div>', {class: 'pdt_varlist'}).appendTo('#wrap');
+			var title = $('<div>', {class: 'pdt_popup_title'}).html('Переменные скрипта '+scr).appendTo(wrap);
+			$('<div>', {class: 'pdt_popup_title_close', onClick: '$(this).parent().parent().remove();'}).appendTo(title);
+			var content = $('<div>', {class: 'pdt_popup_content'}).appendTo(wrap);
+			$.each(data, function(k,v){
+				$('<div>', {class: 'pdt_varlist_var', onClick: 'PDT.scriptVarValue("'+scr+'", "'+v.var+'")'}).html(v.var).appendTo(content);
+			});
+		});
+	},
+	
+	scriptVarValue: function(scr, v){
+		PDT.loadHandler('scriptVarValue', {script: scr, var:v}, function(data){
+			console.log(data);
+		});
 	},
 	
 	listenChanges: function(){
@@ -273,11 +340,10 @@ var PDT = {
 					}else{
 						PDT.loadScriptConsole(v);
 					}
+					PDT.loadScriptProgress(v);
 				});
 			}
 			PDT.listenChanges();
 		});
 	}
 }
-
-	

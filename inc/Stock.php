@@ -19,6 +19,19 @@ function PDT_IncludeTemplate($template){
 	}
 }
 
+function ErrorHandler($errno, $errstr, $errfile, $errline){
+	if(!$errno || $errno == 2){ return false; }
+	$src = fopen('pdt_error.log','a');
+	fwrite($src, json_encode(array(
+		'TIME' => time(),
+		'ERRNO' => $errno,
+		'ERRSTR' => $errstr,
+		'ERRFILE' => $errfile,
+		'ERRLINE' => $errline
+	))."\r\n");
+	fclose($src);
+}
+
 function PDT_HandleError($error){
 	if(!$_POST['shell']){
 		PDT_IncludeTemplate('pdt_error.html');
@@ -45,5 +58,12 @@ function PDT_HandleError($error){
 		<div class="pdt_error_file">Файл: '.$debug[sizeof($debug)-1]['file'].'</div>
 		<div class="pdt_error_route">'.$route.'<div class="pdt_clear"></div></div>
 	</div>';
+}
+
+function my_json_encode($arr){
+        //convmap since 0x80 char codes so it takes all multibyte codes (above ASCII 127). So such characters are being "hidden" from normal json_encoding
+        array_walk_recursive($arr, function (&$item, $key) { if (is_string($item)) $item = mb_encode_numericentity($item, array (0x80, 0xffff, 0, 0xffff), 'UTF-8'); });
+        return mb_decode_numericentity(json_encode($arr), array (0x80, 0xffff, 0, 0xffff), 'UTF-8');
+
 }
 ?>
